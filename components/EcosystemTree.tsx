@@ -15,11 +15,12 @@ interface EcosystemTreeProps {
 export default function EcosystemTree({ score, completedCount }: EcosystemTreeProps) {
   // Determine leaf abundance based on completion score
   const displayScore = Math.max(10, Math.min(100, score));
-  const leafCount = Math.floor(displayScore / 10);
   
-  // Calculate interactive tree visual metrics
-  const trunkHeight = 110;
+  // Calculate interactive tree visual metrics and link to weekly completion score
   const growthScale = 0.5 + (completedCount * 0.15); // branch spread multiplier
+  const foliageRadius = 14 + (displayScore * 0.08); // foliage expands with weekly score
+  const leftBranchExtension = (displayScore * 0.15); // branch grows longer as score rises
+  const rightBranchExtension = (displayScore * 0.12);
 
   return (
     <View className="items-center justify-center p-4">
@@ -72,10 +73,10 @@ export default function EcosystemTree({ score, completedCount }: EcosystemTreePr
             strokeWidth="2"
           />
 
-          {/* Left Branch */}
+          {/* Left Branch (sprouting and length proportional to score) */}
           {completedCount > 0 && (
             <Path
-              d={`M 96,115 Q 70,105 ${70 - (growthScale * 15)},85`}
+              d={`M 96,115 Q 70,105 ${70 - (growthScale * 10) - (leftBranchExtension * 0.15)},${85 - (leftBranchExtension * 0.1)}`}
               stroke="#002246"
               strokeWidth="2"
               fill="none"
@@ -85,7 +86,7 @@ export default function EcosystemTree({ score, completedCount }: EcosystemTreePr
           {/* Right Branch */}
           {completedCount > 1 && (
             <Path
-              d={`M 104,110 Q 130,100 ${130 + (growthScale * 15)},80`}
+              d={`M 104,110 Q 130,100 ${130 + (growthScale * 10) + (rightBranchExtension * 0.15)},${80 - (rightBranchExtension * 0.1)}`}
               stroke="#002246"
               strokeWidth="2"
               fill="none"
@@ -109,37 +110,37 @@ export default function EcosystemTree({ score, completedCount }: EcosystemTreePr
               <Circle
                 cx="100"
                 cy="85"
-                r="18"
+                r={foliageRadius}
                 fill="#001428"
                 stroke={completedCount > 0 ? '#10b981' : '#002246'}
                 strokeWidth="1.5"
-                opacity="0.9"
+                opacity={0.5 + (displayScore / 200)}
               />
             )}
 
             {/* Left side foliage */}
             {score >= 30 && completedCount > 0 && (
               <Circle
-                cx={70 - (growthScale * 10)}
+                cx={70 - (growthScale * 10) - (leftBranchExtension * 0.1)}
                 cy="80"
-                r="14"
+                r={foliageRadius - 3}
                 fill="#001428"
                 stroke={completedCount > 1 ? '#10b981' : '#002246'}
                 strokeWidth="1.5"
-                opacity="0.85"
+                opacity={0.5 + (displayScore / 200)}
               />
             )}
 
             {/* Right side foliage */}
             {score >= 50 && completedCount > 1 && (
               <Circle
-                cx={130 + (growthScale * 10)}
+                cx={130 + (growthScale * 10) + (rightBranchExtension * 0.1)}
                 cy="75"
-                r="14"
+                r={foliageRadius - 3}
                 fill="#001428"
                 stroke={completedCount > 2 ? '#10b981' : '#002246'}
                 strokeWidth="1.5"
-                opacity="0.85"
+                opacity={0.5 + (displayScore / 200)}
               />
             )}
 
@@ -148,11 +149,11 @@ export default function EcosystemTree({ score, completedCount }: EcosystemTreePr
               <Circle
                 cx="100"
                 cy="62"
-                r="12"
+                r={foliageRadius - 5}
                 fill="#001428"
                 stroke="#10b981"
                 strokeWidth="2"
-                opacity="0.9"
+                opacity={0.5 + (displayScore / 200)}
               />
             )}
 
@@ -163,6 +164,36 @@ export default function EcosystemTree({ score, completedCount }: EcosystemTreePr
                 <Circle cx="60" cy="70" r="2.5" fill="#0285ff" />
                 <Circle cx="140" cy="65" r="2" fill="#10b981" />
               </G>
+            )}
+
+            {/* Extra leaves sprouting on the branches based on weekly score */}
+            {score >= 20 && (
+              <Path
+                d="M 80,112 Q 65,102 60,107 Q 70,117 80,112"
+                fill="#10b981"
+                opacity={Math.min(1, (score - 10) / 20)}
+              />
+            )}
+            {score >= 40 && (
+              <Path
+                d="M 120,108 Q 135,98 140,103 Q 130,113 120,108"
+                fill="#10b981"
+                opacity={Math.min(1, (score - 30) / 20)}
+              />
+            )}
+            {score >= 60 && (
+              <Path
+                d="M 100,75 Q 95,60 100,55 Q 105,60 100,75"
+                fill="#10b981"
+                opacity={Math.min(1, (score - 50) / 20)}
+              />
+            )}
+            {score >= 80 && (
+              <Path
+                d="M 75,90 Q 60,80 55,85 Q 65,95 75,90"
+                fill="#10b981"
+                opacity={Math.min(1, (score - 70) / 20)}
+              />
             )}
           </G>
         </Svg>

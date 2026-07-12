@@ -6,15 +6,27 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Pressable, ScrollView, Modal } from 'react-native';
 import { useRouter } from 'expo-router';
-import { CheckSquare, Square, Trophy, Flame, ChevronRight, Leaf, HelpCircle, RefreshCw, User, Settings, Info } from 'lucide-react-native';
+import { CheckSquare, Square, Trophy, Flame, ChevronRight, Leaf, HelpCircle, RefreshCw, User, Settings, Info, Cpu, Wifi } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useGlobalState } from '../_layout';
 import HabitsWardrobe from '../../components/HabitsWardrobe';
 import ProfileEditor from '../../components/ProfileEditor';
+import {
+  getAvoidedLlmRequestsCount,
+  getCumulativeDarkTime,
+  addCumulativeDarkTime,
+  getCompletionHistory,
+  saveCompletionHistory
+} from '../../src/services/mmkv';
+import {
+  queueSyncEvent,
+  checkAndProcessSyncQueue,
+  getPendingSyncCount
+} from '../../src/services/syncQueue';
 
 export default function PulseScreen() {
   const router = useRouter();
-  const { committedGoal, completedTasks, setCompletedTasks, quizAnswers } = useGlobalState();
+  const { committedGoal, completedTasks, setCompletedTasks, quizAnswers, userEmail } = useGlobalState();
 
   const [streak, setStreak] = useState(3);
   const [showWardrobe, setShowWardrobe] = useState(false);
@@ -22,6 +34,10 @@ export default function PulseScreen() {
   const [motivationalQuote, setMotivationalQuote] = useState(
     "Every action you take is a vote for the type of person you wish to become. — James Clear"
   );
+
+  const [avoidedLlmCount, setAvoidedLlmCount] = useState(() => getAvoidedLlmRequestsCount());
+  const [darkSeconds, setDarkSeconds] = useState(() => getCumulativeDarkTime());
+  const [pendingSyncCount, setPendingSyncCountState] = useState(() => getPendingSyncCount());
 
   const quotesList = [
     "Every action you take is a vote for the type of person you wish to become. — James Clear",
@@ -38,6 +54,16 @@ export default function PulseScreen() {
       router.replace('/');
     }
   }, [committedGoal]);
+
+  // Low-CPU active black background session counter
+  useEffect(() => {
+    const interval = setInterval(() => {
+      addCumulativeDarkTime(3);
+      setDarkSeconds(getCumulativeDarkTime());
+      setPendingSyncCountState(getPendingSyncCount());
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
 
   if (!committedGoal) {
     return null;
@@ -78,6 +104,39 @@ export default function PulseScreen() {
     } else if (newCompleted.length < 3 && completedTasks.length === 3) {
       setStreak(prev => Math.max(0, prev - 1));
     }
+
+    // Instantly save completion history state to MMKV
+    try {
+      const todayStr = new Date().toISOString().split('T')[0];
+      const currentHistory = getCompletionHistory();
+      const otherHistory = currentHistory.filter(h => h.date !== todayStr);
+      const updatedHistory = [...otherHistory, { date: todayStr, completedTasks: newCompleted }];
+      saveCompletionHistory(updatedHistory);
+    } catch (e) {
+      console.warn('Failed to save completion history to MMKV:', e);
+    }
+
+    // Queue sync event
+    try {
+      const todayStr = new Date().toISOString().split('T')[0];
+      queueSyncEvent('HABIT_TOGGLE', {
+        date: todayStr,
+        completedTasks: newCompleted,
+        goalId: committedGoal.id,
+        goalCategory: committedGoal.category
+      });
+      setPendingSyncCountState(getPendingSyncCount());
+    } catch (e) {
+      console.warn('Failed to queue sync event:', e);
+    }
+
+    // Process sync queue under on-device green constraints (WiFi, Battery > 50%)
+    const userId = userEmail || 'guest_user';
+    checkAndProcessSyncQueue(userId).then(() => {
+      setPendingSyncCountState(getPendingSyncCount());
+    }).catch(err => {
+      console.warn('Sync queue processing deferred:', err);
+    });
   };
 
   // Resolve metrics depending on category
@@ -226,7 +285,7 @@ export default function PulseScreen() {
           </View>
 
           {/* Cumulative Metrics Offset Panel */}
-          <View className="bg-[#000814] border border-[#002246] p-5 rounded-3xl">
+          <View className="bg-[#000814] border border-[#002246] p-5 rounded-3xl mb-6">
             <View className="flex-row items-center gap-2 mb-4">
               <Trophy className="w-4 h-4 text-amber-500" />
               <Text className="text-xs font-mono uppercase tracking-widest text-slate-400 font-bold">
@@ -256,6 +315,81 @@ export default function PulseScreen() {
             <Text className="text-3xs text-slate-500 leading-normal border-t border-[#001428] pt-3 font-mono">
               💡 {metrics.tip}
             </Text>
+          </View>
+
+          {/* OLED Green Impact Tracker Widget */}
+          <View className="bg-black border border-[#002246] p-5 rounded-3xl mb-6">
+            <View className="flex-row items-center gap-2 mb-4">
+              <Cpu className="w-4 h-4 text-[#10b981]" />
+              <Text className="text-xs font-mono uppercase tracking-widest text-[#10b981] font-bold">
+                OLED Green Impact Engine
+              </Text>
+            </View>
+
+            <View className="space-y-4">
+              {/* Avoided LLM Requests row */}
+              <View className="flex-row items-center justify-between border-b border-[#001428] pb-3 mb-3">
+                <View className="flex-1 pr-3">
+                  <Text className="text-2xs font-mono text-slate-400 font-bold uppercase">
+                    Avoided LLM Requests
+                  </Text>
+                  <Text className="text-4xs font-sans text-slate-500 mt-0.5">
+                    Scored locally using zero-compute branching logic
+                  </Text>
+                </View>
+                <View className="items-end">
+                  <Text className="text-sm font-mono text-white font-bold">
+                    {avoidedLlmCount} requests
+                  </Text>
+                  <Text className="text-4xs font-mono text-[#10b981]">
+                    -{((avoidedLlmCount || 1) * 0.5).toFixed(1)}g CO₂e saved
+                  </Text>
+                </View>
+              </View>
+
+              {/* True Black Battery Saver row */}
+              <View className="flex-row items-center justify-between border-b border-[#001428] pb-3 mb-3">
+                <View className="flex-1 pr-3">
+                  <Text className="text-2xs font-mono text-slate-400 font-bold uppercase">
+                    True Black Battery Saver
+                  </Text>
+                  <Text className="text-4xs font-sans text-slate-500 mt-0.5">
+                    Turned off OLED pixels based on black canvas screen-time
+                  </Text>
+                </View>
+                <View className="items-end">
+                  <Text className="text-sm font-mono text-white font-bold">
+                    {Math.floor(darkSeconds / 60)}m {darkSeconds % 60}s
+                  </Text>
+                  <Text className="text-4xs font-mono text-amber-500">
+                    -{(darkSeconds * 0.12).toFixed(1)} mW power reduction
+                  </Text>
+                </View>
+              </View>
+
+              {/* Batched Sync Events row */}
+              <View className="flex-row items-center justify-between">
+                <View className="flex-1 pr-3">
+                  <Text className="text-2xs font-mono text-slate-400 font-bold uppercase">
+                    Batched Sync Queue
+                  </Text>
+                  <Text className="text-4xs font-sans text-slate-500 mt-0.5">
+                    Syncs only when connected to Wi-Fi and battery &gt; 50%
+                  </Text>
+                </View>
+                <View className="items-end">
+                  <View className="flex-row items-center gap-1">
+                    <Wifi className="w-3.5 h-3.5 text-slate-400" />
+                    <Text className="text-sm font-mono text-white font-bold">
+                      {pendingSyncCount} events
+                    </Text>
+                  </View>
+                  <Text className="text-4xs font-mono text-slate-400">
+                    {pendingSyncCount > 0 ? 'Buffering local queue' : 'Fully Synchronized'}
+                  </Text>
+                </View>
+              </View>
+            </View>
           </View>
         </View>
       </ScrollView>

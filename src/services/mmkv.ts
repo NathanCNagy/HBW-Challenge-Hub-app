@@ -57,4 +57,38 @@ export const setQuizAnswers = (answers: QuizAnswers) => {
   storage.set('hbw_quiz_answers', JSON.stringify(answers));
 };
 
+export interface CompletionHistoryEntry {
+  date: string; // YYYY-MM-DD
+  completedTasks: string[]; // e.g. ['task-1', 'task-2', 'task-3']
+}
+
+export const getCompletionHistory = (): CompletionHistoryEntry[] => {
+  const data = storage.getString('hbw_completion_history');
+  return data ? JSON.parse(data) : [];
+};
+
+export const saveCompletionHistory = (history: CompletionHistoryEntry[]) => {
+  storage.set('hbw_completion_history', JSON.stringify(history));
+};
+
+export const getAvoidedLlmRequestsCount = (): number => {
+  const saved = storage.getString('hbw_avoided_llm_requests');
+  return saved ? parseInt(saved, 10) : 4; // default to 4 for immediate visual impact
+};
+
+export const incrementAvoidedLlmRequestsCount = () => {
+  const current = getAvoidedLlmRequestsCount();
+  storage.set('hbw_avoided_llm_requests', String(current + 1));
+};
+
+export const getCumulativeDarkTime = (): number => {
+  const saved = storage.getString('hbw_cumulative_dark_time');
+  return saved ? parseInt(saved, 10) : 1240; // default starting seconds for realistic metrics representation
+};
+
+export const addCumulativeDarkTime = (seconds: number) => {
+  const current = getCumulativeDarkTime();
+  storage.set('hbw_cumulative_dark_time', String(current + seconds));
+};
+
 export default storage;

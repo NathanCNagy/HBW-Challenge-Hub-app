@@ -10,6 +10,7 @@ import { Sparkles, Trophy, RefreshCw, CheckCircle, ChevronRight, Leaf, HelpCircl
 import { useGlobalState } from './_layout';
 import { getGreenRecommendations } from '../src/services/recommendationEngine';
 import { Goal } from '../src/types';
+import { incrementAvoidedLlmRequestsCount } from '../src/services/mmkv';
 
 export default function RecommendationsScreen() {
   const router = useRouter();
@@ -24,6 +25,11 @@ export default function RecommendationsScreen() {
     const results = getGreenRecommendations(quizAnswers);
     setTopGoal(results.topGoal);
     setAlternatives(results.alternatives);
+    try {
+      incrementAvoidedLlmRequestsCount();
+    } catch (e) {
+      console.warn('Failed to increment avoided LLM requests:', e);
+    }
   }, [quizAnswers]);
 
   const handleCommit = (goal: Goal) => {

@@ -9,6 +9,10 @@ import { collection, writeBatch, doc } from 'firebase/firestore';
 // In-memory queue of sync events to keep cloud writes batched & save transmission compute
 let syncQueue: any[] = [];
 
+export function getPendingSyncCount() {
+  return syncQueue.length;
+}
+
 export function queueSyncEvent(type: string, payload: any) {
   syncQueue.push({
     timestamp: new Date().toISOString(),
