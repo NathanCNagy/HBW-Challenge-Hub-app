@@ -1,6 +1,5 @@
 import express from 'express';
 import path from 'path';
-import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI, Type } from '@google/genai';
 import dotenv from 'dotenv';
 
@@ -12,6 +11,11 @@ async function startServer() {
 
   // Setup body parsers
   app.use(express.json());
+
+  // Health check endpoint for Cloud Run container probes
+  app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  });
 
   // Initialize server-side Gemini client safely
   let ai: GoogleGenAI | null = null;
@@ -148,6 +152,7 @@ The topGoal must have a unique ID like "ai-top", the alternatives should have ID
 
   // Serve static files in production or run Vite Dev Server middleware in dev
   if (process.env.NODE_ENV !== 'production') {
+    const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
