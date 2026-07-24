@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Smartphone, Monitor, ShieldCheck, HeartHandshake, Eye, Sparkles, X, Download, FileText } from 'lucide-react';
 import { jsPDF } from 'jspdf';
+import SmartwatchSimulator from './SmartwatchSimulator';
 // @ts-ignore
 import onboardingUserFlowImg from '../assets/images/onboarding_user_flow_1782264270534.jpg';
 
@@ -10,6 +11,7 @@ interface DeviceSimulatorProps {
 
 export default function DeviceSimulator({ children }: DeviceSimulatorProps) {
   const [showFlowModal, setShowFlowModal] = useState(false);
+  const [showWatchSimulator, setShowWatchSimulator] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
   const downloadUserFlowPDF = () => {
@@ -62,8 +64,20 @@ export default function DeviceSimulator({ children }: DeviceSimulatorProps) {
           </div>
         </div>
 
-        {/* User Flow Map button */}
-        <div className="flex items-center">
+        {/* Action buttons */}
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <button
+            onClick={() => setShowWatchSimulator(!showWatchSimulator)}
+            className={`flex items-center gap-2 px-4 py-2 font-sans text-xs font-bold rounded-xl transition-all border shadow-md active:scale-95 ${
+              showWatchSimulator 
+                ? 'bg-[#0285ff] text-white border-[#0285ff]' 
+                : 'bg-[#002246] hover:bg-[#00488A] text-slate-200 border-[#00488A]/50'
+            }`}
+          >
+            <Sparkles className="w-4 h-4 text-[#0285ff] bg-white/10 rounded-full p-0.5" />
+            {showWatchSimulator ? 'Hide Watch Demo' : 'Show Watch Demo'}
+          </button>
+
           <button
             onClick={() => setShowFlowModal(true)}
             className="flex items-center gap-2 px-4 py-2 bg-[#002246] hover:bg-[#00488A] active:scale-95 text-white font-sans text-xs font-bold rounded-xl transition-all border border-[#00488A]/50 shadow-md"
@@ -75,7 +89,7 @@ export default function DeviceSimulator({ children }: DeviceSimulatorProps) {
       </div>
 
       {/* Simulator view frame context - Forced to Mobile Bezel layout */}
-      <div className="w-full max-w-7xl mx-auto flex justify-center items-start min-h-[750px] py-4">
+      <div className="w-full max-w-7xl mx-auto flex flex-col lg:flex-row justify-center items-center lg:items-start gap-8 min-h-[750px] py-4">
         {/* Mobile App design viewport with simulation bezel */}
         <div className="relative w-[390px] h-[820px] bg-black rounded-[50px] p-3.5 shadow-[0_25px_60px_-15px_rgba(2,133,255,0.15)] border-4 border-neutral-900 flex flex-col items-center shrink-0 transition-all duration-300">
           {/* Top Ear Piece notch dynamic simulation */}
@@ -110,6 +124,26 @@ export default function DeviceSimulator({ children }: DeviceSimulatorProps) {
             </div>
           </div>
         </div>
+
+        {/* Smartwatch Simulator side-by-side companion (Optional) */}
+        {showWatchSimulator && (
+          <div className="flex flex-col gap-4 items-center shrink-0 w-full max-w-[340px] lg:mt-24 transition-all duration-300">
+            <SmartwatchSimulator />
+            <div className="bg-[#000d1a]/40 border border-[#002246]/50 rounded-2xl p-4 text-xs text-slate-400 max-w-[340px] leading-relaxed">
+              <h4 className="text-white font-bold mb-1.5 font-sans flex items-center gap-1">
+                <Sparkles className="w-4 h-4 text-[#0285ff]" />
+                Eco-System Sync Technology
+              </h4>
+              <p className="text-[11px]">
+                This simulation showcases real-time, bi-directional telemetry synchronizing the phone app with WearOS and watchOS wearables. 
+              </p>
+              <ul className="list-disc pl-4 mt-1.5 space-y-1 text-[10px]">
+                <li>Tapping <strong>Complete</strong> on the watch instantly updates your streak on the phone app.</li>
+                <li>Setting custom anchors on the phone broadcasts alerts down to your wrist.</li>
+              </ul>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Full screen User Flow Modal */}

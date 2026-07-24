@@ -7,3 +7,13 @@
   --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
+
+@keyframes shake {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  10%, 30%, 50%, 70%, 90% { transform: translate(-2px, 1px) rotate(-1deg); }
+  20%, 40%, 60%, 80% { transform: translate(2px, -1px) rotate(1deg); }
+}
+
+.animate-shake {
+  animation: shake 0.4s ease-in-out;
+}

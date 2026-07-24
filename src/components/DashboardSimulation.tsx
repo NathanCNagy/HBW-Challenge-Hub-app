@@ -201,6 +201,51 @@ export default function DashboardSimulation({
     }, 3500);
   };
 
+  // Listen for completed from watch or sync requests
+  React.useEffect(() => {
+    const handleCompleteFromWatch = () => {
+      if (!hasLoggedToday) {
+        setChecklist({ habitDone: true, anchorDone: true, reflectDone: true });
+        handleLogSuccess();
+      }
+    };
+
+    const handleSyncRequest = () => {
+      window.dispatchEvent(new CustomEvent('hbw:sync-state', {
+        detail: {
+          streak,
+          hasLoggedToday,
+          individualEnergy,
+          goalTitle: activeGoal.title,
+          goalCategory: activeGoal.category,
+          checklist,
+        }
+      }));
+    };
+
+    window.addEventListener('hbw:complete-habit-from-watch', handleCompleteFromWatch);
+    window.addEventListener('hbw:request-state-sync', handleSyncRequest);
+
+    return () => {
+      window.removeEventListener('hbw:complete-habit-from-watch', handleCompleteFromWatch);
+      window.removeEventListener('hbw:request-state-sync', handleSyncRequest);
+    };
+  }, [hasLoggedToday, streak, individualEnergy, activeGoal, checklist]);
+
+  // Dispatch sync event whenever states change
+  React.useEffect(() => {
+    window.dispatchEvent(new CustomEvent('hbw:sync-state', {
+      detail: {
+        streak,
+        hasLoggedToday,
+        individualEnergy,
+        goalTitle: activeGoal.title,
+        goalCategory: activeGoal.category,
+        checklist,
+      }
+    }));
+  }, [streak, hasLoggedToday, individualEnergy, activeGoal, checklist]);
+
   // Projected 3-Month metrics calculator based on active habit category
   const getMetricsLabels = () => {
     switch (activeGoal.category) {

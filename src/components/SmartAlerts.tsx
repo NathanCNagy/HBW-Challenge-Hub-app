@@ -16,6 +16,19 @@ export default function SmartAlerts({ goalTitle, defaultAnchor = 'pouring my mor
 
   const handleSaveAlerts = () => {
     setIsSaved(true);
+    
+    // Dispatch automatic watch alert
+    window.dispatchEvent(
+      new CustomEvent('hbw:add-notification', {
+        detail: {
+          id: Date.now(),
+          title: 'Schedule Updated ⏰',
+          body: `Habit paired with anchor: "${anchor}". Next trigger set for ${alertTime}.`,
+          type: 'system'
+        }
+      })
+    );
+
     setTimeout(() => {
       setIsSaved(false);
     }, 2500);
@@ -142,6 +155,30 @@ export default function SmartAlerts({ goalTitle, defaultAnchor = 'pouring my mor
             </p>
           </div>
         </div>
+
+        {/* Send to Watch Trigger */}
+        <button
+          onClick={() => {
+            window.dispatchEvent(
+              new CustomEvent('hbw:add-notification', {
+                detail: {
+                  id: Date.now(),
+                  title: 'Microchange Alert! 🚨',
+                  body: `Right after you finish "${anchor}", remember to do "${goalTitle}".`,
+                  type: 'alert'
+                }
+              })
+            );
+          }}
+          className="w-full mt-1.5 py-1.5 bg-[#001124] hover:bg-[#002246] active:scale-95 text-[#0285ff] hover:text-white border border-[#002246] text-[10px] font-mono font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-sm"
+        >
+          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="6" y="6" width="12" height="12" rx="2" />
+            <path d="M12 2v4" />
+            <path d="M12 18v4" />
+          </svg>
+          <span>Demo: Broadcast to Smartwatch</span>
+        </button>
       </div>
     </div>
   );
